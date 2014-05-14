@@ -8,7 +8,7 @@ import (
   "bytes"
   "strings"
   "github.com/kurrik/oauth1a"
-  // "json"
+  "encoding/json"
 )
 
 type Tweet struct {
@@ -110,7 +110,20 @@ func (u *UStreamConn) ReadStream(resp *http.Response) {
           continue
       }
 
-      fmt.Printf(string(line[:]))
+      // Skip over friendlist and events for now
+      if bytes.HasPrefix(line, []byte(`{"event":`)) {
+        continue
+      }
+      if bytes.HasPrefix(line, []byte(`{"friends":`)) {
+        continue
+      }
+
+      var tweet Tweet
+      json.Unmarshal(line, &tweet)
+      
+      fmt.Printf("%#v", tweet)
+
+      // fmt.Printf(string(line[:]))
 
   }
 }
