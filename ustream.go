@@ -14,6 +14,12 @@ import (
 type Tweet struct {
   id int64
   text string
+  user *User
+}
+
+type User struct {
+  screen_name string
+  name string
 }
 
 // TODO: rename this to a client
@@ -101,7 +107,7 @@ func (u *UStreamConn) ReadStream(resp *http.Response) {
       line, err := reader.ReadBytes('\n')
 
       if err != nil {
-        fmt.Printf("Error reading line of response")
+        fmt.Printf("Error reading line of response\n")
       }
 
       line = bytes.TrimSpace(line)
@@ -118,9 +124,59 @@ func (u *UStreamConn) ReadStream(resp *http.Response) {
         continue
       }
 
-      var tweet Tweet
-      json.Unmarshal(line, &tweet)
-      
+      // Unmarshal the tweet into a buffer
+      var buffer map[string]interface{}
+      json.Unmarshal(line, &buffer)
+
+      var tweet *Tweet
+
+      // Only grab the information we want from the unmarshalled data
+      if buffer["id"] != 0 && buffer["text"] != "" {
+
+        id, ok := buffer["id"].(float64)
+
+        if !ok {
+          fmt.Printf("Error converting Tweet ID")
+          continue
+        }
+
+        text, ok := buffer["text"].(string)
+
+        if !ok {
+          fmt.Printf("Error converting Tweet text")
+          continue
+        }
+
+        if buffer["user"] != nil {
+
+          user, ok := buffer["user"].(map[string]interface{})
+
+          if !ok {
+            fmt.Printf("Error converting Tweet User")
+            continue
+          }
+
+          name, ok := user["name"].(string)
+
+          if !ok {
+            fmt.Printf("Error converting Tweet User Name")
+            continue
+          }
+
+          screen_name, ok := user["screen_name"].(string)
+
+          if !ok {
+            fmt.Printf("Error converting Tweet User ScreenName")
+            continue
+          }
+
+          // Create Tweet
+          tweet = &Tweet{ int64(id), text, &User{ screen_name, name }}
+
+        }
+      }
+
+      // Test printout
       fmt.Printf("%#v", tweet)
 
       // fmt.Printf(string(line[:]))
