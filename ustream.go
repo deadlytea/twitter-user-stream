@@ -23,22 +23,22 @@ type User struct {
 }
 
 // TODO: rename this to a client
-type UStreamConn struct {
+type UStreamClient struct {
   service *oauth1a.Service
   user *oauth1a.UserConfig
   httpClient *http.Client
   stream chan *Tweet
 }
 
-func NewUStreamConn() *UStreamConn {
+func NewUStreamClient() *UStreamClient {
 
   creds, err := ReadCredentials()
   if err != nil {
-    fmt.Printf("Credential read error, could not create UstreamConnection")
+    fmt.Printf("Credential read error, could not create UStreamClient")
     return nil
   }
 
-  u := new(UStreamConn)
+  u := new(UStreamClient)
 
   u.service = &oauth1a.Service{
     RequestURL:   "https://api.twitter.com/oauth/request_token",
@@ -81,7 +81,7 @@ func ReadCredentials() (map[string]string, error) {
   return c, nil
 }
 
-func (u *UStreamConn) Connect() (error) {
+func (u *UStreamClient) Connect() (error) {
 
   httpRequest, _ := http.NewRequest("GET", "https://userstream.twitter.com/1.1/user.json", nil)
   u.service.Sign(httpRequest, u.user)
@@ -99,7 +99,7 @@ func (u *UStreamConn) Connect() (error) {
   return nil
 }
 
-func (u *UStreamConn) ReadStream(resp *http.Response) {
+func (u *UStreamClient) ReadStream(resp *http.Response) {
   var reader *bufio.Reader
   reader = bufio.NewReader(resp.Body)
   for {
@@ -185,7 +185,7 @@ func (u *UStreamConn) ReadStream(resp *http.Response) {
 }
 
 func main() {
-  client := NewUStreamConn()
+  client := NewUStreamClient()
 
   client.Connect()
 }
