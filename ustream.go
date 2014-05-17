@@ -1,4 +1,4 @@
-package main
+package ustream
 
 import (
   "fmt"
@@ -22,7 +22,6 @@ type User struct {
   name string
 }
 
-// TODO: rename this to a client
 type UStreamClient struct {
   service *oauth1a.Service
   user *oauth1a.UserConfig
@@ -81,7 +80,7 @@ func ReadCredentials() (map[string]string, error) {
   return c, nil
 }
 
-func (u *UStreamClient) Connect() (error) {
+func (u *UStreamClient) Connect() (*http.Response, error) {
 
   httpRequest, _ := http.NewRequest("GET", "https://userstream.twitter.com/1.1/user.json", nil)
   u.service.Sign(httpRequest, u.user)
@@ -91,17 +90,17 @@ func (u *UStreamClient) Connect() (error) {
 
   if err != nil {
     fmt.Printf("Connection error")
-    return err
+    return nil, err
   }
 
-  u.ReadStream(httpResponse)
-
-  return nil
+  return httpResponse, nil
 }
 
-func (u *UStreamClient) ReadStream(resp *http.Response) {
+func (u *UStreamClient) ReadStream(resp *http.Response) (chan *Tweet) {
   var reader *bufio.Reader
   reader = bufio.NewReader(resp.Body)
+
+  go func() {
   for {
 
       line, err := reader.ReadBytes('\n')
@@ -176,16 +175,16 @@ func (u *UStreamClient) ReadStream(resp *http.Response) {
         }
       }
 
+      // Send it down
+      u.stream <- tweet
+
       // Test printout
-      fmt.Printf("%#v", tweet)
+      //fmt.Printf("%#v", tweet)
 
       // fmt.Printf(string(line[:]))
 
   }
-}
+  }()
 
-func main() {
-  client := NewUStreamClient()
-
-  client.Connect()
+  return u.stream
 }
