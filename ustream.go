@@ -12,14 +12,14 @@ import (
 )
 
 type Tweet struct {
-  id int64
-  text string
-  user *User
+  Id int64
+  Text string
+  User *User
 }
 
 type User struct {
-  screen_name string
-  name string
+  Screen_name string
+  Name string
 }
 
 type UStreamClient struct {
