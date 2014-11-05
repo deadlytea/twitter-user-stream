@@ -1,7 +1,7 @@
 package ustream
 
 import (
-  "fmt"
+  "log"
   "net/http"
   "bufio"
   "io/ioutil"
@@ -12,9 +12,10 @@ import (
 )
 
 type Tweet struct {
-  Id int64
+  Id_str string
   Text string
   User *User
+  In_reply_to_status_id_str string
 }
 
 type User struct {
@@ -33,7 +34,7 @@ func NewUStreamClient() *UStreamClient {
 
   creds, err := ReadCredentials()
   if err != nil {
-    fmt.Printf("Credential read error, could not create UStreamClient")
+    log.Printf("Credential read error, could not create UStreamClient")
     return nil
   }
 
@@ -89,7 +90,7 @@ func (u *UStreamClient) Connect() (*http.Response, error) {
   httpResponse, err = u.httpClient.Do(httpRequest)
 
   if err != nil {
-    fmt.Printf("Connection error")
+    log.Printf("Connection error")
     return nil, err
   }
 
@@ -106,7 +107,7 @@ func (u *UStreamClient) ReadStream(resp *http.Response) (chan *Tweet) {
       line, err := reader.ReadBytes('\n')
 
       if err != nil {
-        fmt.Printf("Error reading line of response\n")
+        log.Printf("Error reading line of response\n")
       }
 
       line = bytes.TrimSpace(line)
@@ -132,18 +133,24 @@ func (u *UStreamClient) ReadStream(resp *http.Response) (chan *Tweet) {
       // Only grab the information we want from the unmarshalled data
       if buffer["id"] != 0 && buffer["text"] != "" {
 
-        id, ok := buffer["id"].(float64)
+        id_str, ok := buffer["id_str"].(string)
 
         if !ok {
-          fmt.Printf("Error converting Tweet ID")
+          log.Printf("Error converting Tweet ID: %#v", buffer["id_str"])
           continue
         }
 
         text, ok := buffer["text"].(string)
 
         if !ok {
-          fmt.Printf("Error converting Tweet text")
+          log.Printf("Error converting Tweet text")
           continue
+        }
+
+        in_reply_to_status_id_str, ok := buffer["in_reply_to_status_id_str"].(string)
+
+        if string(in_reply_to_status_id_str) == "null" {
+          log.Printf("Error converting Tweet reply status id str")
         }
 
         if buffer["user"] != nil {
@@ -151,38 +158,30 @@ func (u *UStreamClient) ReadStream(resp *http.Response) (chan *Tweet) {
           user, ok := buffer["user"].(map[string]interface{})
 
           if !ok {
-            fmt.Printf("Error converting Tweet User")
+            log.Printf("Error converting Tweet User")
             continue
           }
 
           name, ok := user["name"].(string)
 
           if !ok {
-            fmt.Printf("Error converting Tweet User Name")
+            log.Printf("Error converting Tweet User Name")
             continue
           }
 
           screen_name, ok := user["screen_name"].(string)
 
           if !ok {
-            fmt.Printf("Error converting Tweet User ScreenName")
+            log.Printf("Error converting Tweet User ScreenName")
             continue
           }
 
           // Create Tweet
-          tweet = &Tweet{ int64(id), text, &User{ screen_name, name }}
-
+          tweet = &Tweet{ id_str, text, &User{ screen_name, name }, in_reply_to_status_id_str}
         }
       }
 
-      // Send it down
       u.stream <- tweet
-
-      // Test printout
-      //fmt.Printf("%#v", tweet)
-
-      // fmt.Printf(string(line[:]))
-
   }
   }()
 
