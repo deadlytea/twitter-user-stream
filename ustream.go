@@ -12,7 +12,7 @@ import (
 )
 
 type Tweet struct {
-  Id int64
+  Id_str string
   Text string
   User *User
   In_reply_to_status_id_str string
@@ -133,10 +133,10 @@ func (u *UStreamClient) ReadStream(resp *http.Response) (chan *Tweet) {
       // Only grab the information we want from the unmarshalled data
       if buffer["id"] != 0 && buffer["text"] != "" {
 
-        id, ok := buffer["id"].(float64)
+        id_str, ok := buffer["id_str"].(string)
 
         if !ok {
-          log.Printf("Error converting Tweet ID")
+          log.Printf("Error converting Tweet ID: %#v", buffer["id_str"])
           continue
         }
 
@@ -177,18 +177,11 @@ func (u *UStreamClient) ReadStream(resp *http.Response) (chan *Tweet) {
           }
 
           // Create Tweet
-          tweet = &Tweet{ int64(id), text, &User{ screen_name, name }, in_reply_to_status_id_str}
+          tweet = &Tweet{ id_str, text, &User{ screen_name, name }, in_reply_to_status_id_str}
         }
       }
 
-      // Send it down
       u.stream <- tweet
-
-      // Test printout
-      //log.Printf("%#v", tweet)
-
-      // log.Printf(string(line[:]))
-
   }
   }()
 
