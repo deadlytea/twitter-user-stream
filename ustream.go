@@ -66,24 +66,24 @@ func NewUStreamClient() *UStreamClient {
 
 func ReadCredentials() (map[string]string, error) {
 	c := make(map[string]string)
-	var creds_arr []string
 	if os.Getenv("OAUTH_CONSUMER_KEY") != "" {
-		creds_arr[0] = os.Getenv("OAUTH_CONSUMER_KEY")
-		creds_arr[1] = os.Getenv("OAUTH_CONSUMER_SECRET")
-		creds_arr[2] = os.Getenv("OAUTH_TOKEN")
-		creds_arr[3] = os.Getenv("OAUTH_TOKEN_SECRET")
+		log.Println("Using environment variables for credentials")
+		c["oauth_consumer_key"] = os.Getenv("OAUTH_CONSUMER_KEY")
+		c["oauth_consumer_secret"] = os.Getenv("OAUTH_CONSUMER_SECRET")
+		c["oauth_token"] = os.Getenv("OAUTH_TOKEN")
+		c["oauth_token_secret"] = os.Getenv("OAUTH_TOKEN_SECRET")
 	} else {
+		log.Println("Using file for credentials")
 		creds, err := ioutil.ReadFile("CREDENTIALS")
 		if err != nil {
 			return nil, err
 		}
-		creds_arr = strings.Split(string(creds), "\n")
+		creds_arr := strings.Split(string(creds), "\n")
+		c["oauth_consumer_key"] = creds_arr[0]
+		c["oauth_consumer_secret"] = creds_arr[1]
+		c["oauth_token"] = creds_arr[2]
+		c["oauth_token_secret"] = creds_arr[3]
 	}
-
-	c["oauth_consumer_key"] = creds_arr[0]
-	c["oauth_consumer_secret"] = creds_arr[1]
-	c["oauth_token"] = creds_arr[2]
-	c["oauth_token_secret"] = creds_arr[3]
 
 	return c, nil
 }
